@@ -238,6 +238,28 @@ static void import(EvalState & state, const PosIdx pos, Value & vPath, Value * v
 static RegisterPrimOp primop_scopedImport(RegisterPrimOp::Info {
     .name = "scopedImport",
     .arity = 2,
+    .args = {"attrs", "path"},
+    .doc = R"(
+      Load, parse, and return the Nix expression the file *path*, where
+      attributes in *attrs* are bound to the global scope. If *path* is a
+      directory, the file ` default.nix ` in that directory is loaded.
+      Evaluation aborts if the file doesn’t exist or contains an incorrect
+      Nix expression.
+      
+      ```nix
+      let f = builtins.toFile "f.nix" "{ x = 1; y = x + 2; }";
+      in scopedImport { x = 5; z = 0; } f
+      ==> { x = 1; y = 7; }
+      ```
+      
+      `scopedImport` behaves similar to a `let` expression without the
+      recursive property - in fact `let` is simply a special case of
+      `scopedImport` in its implementation.
+      In the example above, take note that `z` has no effect on the
+      result, and that the *attrs* value of `x` is referenced in the
+      expression for `y` as opposed to the `f.nix` field `x`.
+      Consider how this differs from the behavior of `let`.
+    )",
     .fun = [](EvalState & state, const PosIdx pos, Value * * args, Value & v)
     {
         import(state, pos, *args[1], args[0], v);
